@@ -1,0 +1,27 @@
+---
+title: "cp01"
+author: "Ana Godoy"
+date: "7/9/2018"
+output: html_document
+---
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(here)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(viridis)
+theme_set(theme_bw())
+```
+##
+```{r}
+
+git = read_csv(here("data/git.csv"), 
+                    progress = FALSE,
+                    col_types = cols(.default = col_double(), 
+                                     file_extension = col_character(), 
+                                     month_day = col_character(), 
+                                     the_month = col_character(),
+                                     the_year = col_character(),
+                                     users = col_character()))
+```
