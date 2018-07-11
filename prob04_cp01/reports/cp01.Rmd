@@ -9,14 +9,16 @@ library(tidyverse)
 library(here)
 library(ggplot2)
 library(plotly)
-library(dplyr)
-library(viridis)
-theme_set(theme_bw())
+library(lubridate)
 ```
-##
+#Os Dados
+Os dados brutos contém a contagem de quantas pessoas editaram arquivos no github de  (dia, mês e ano) 2016 a 2017 e as devidas extensões desses arquivos.
+Para a nossa análise escolhemos:
+  -Python:  É uma linguagem de programação de alto nível, interpretada, de script, imperativa, orientada a objetos, funcional, de tipagem dinâmica e forte. Foi lançada por Guido van Rossum em 1991.(https://pt.wikipedia.org/wiki/Python)
+  -Ruby: É uma linguagem de programação interpretada multiparadigma, de tipagem dinâmica e forte, com gerenciamento de memória automático, originalmente planejada e desenvolvida no Japão em 1995.(https://pt.wikipedia.org/wiki/Ruby_(linguagem_de_programação)) 
+  
 ```{r}
-
-git = read_csv(here("data/git.csv"), 
+git = read_csv(("../data/git.csv"), 
                     progress = FALSE,
                     col_types = cols(.default = col_double(), 
                                      file_extension = col_character(), 
@@ -24,4 +26,108 @@ git = read_csv(here("data/git.csv"),
                                      the_month = col_character(),
                                      the_year = col_character(),
                                      users = col_character()))
+```
+#Pergunta 1: Para cada uma delas, há uma diferença significativa na sua popularidade durante a semana e durante o fim de semana? Essa diferença é grande?
+Para visualizar a popularidade das linguagens durante a semana e no fim de semana, iremos calcular a média de uso associadas a cada uma. 
+##Python popularidade na semana:
+```{r}
+python = git  %>% filter(file_extension%in% c("py"))
+
+python$date<-paste(python$month_day, python$the_month, python$the_year, sep = "-")
+python$weekday<-wday(as.Date(python$date), label = TRUE)
+
+totalPy <- python%>%summarise(nPy = n())
+
+week <- python%>% 
+  filter(weekday%in% c("Mon", "Tue","Wed", "Thu", "Fri"))%>% group_by(weekday)%>%
+  summarise(nWeek = n())
+totalweek<- sum(week$nWeek)
+mediaPyWeek<- 100*(totalweek/totalPy)
+
+p <- week%>%ggplot(aes(weekday,nWeek, fill= weekday) )+
+          geom_col()+
+          geom_hline(yintercept = 71.17)+
+          ggtitle( "Media de uso na semana= ",mediaPyWeek )
+
+p
+
+
+
+```
+##Python popularidade no fim de semana 
+```{r}
+weekend <- python%>% 
+  filter(weekday%in% c("Sun", "Sat"))%>% group_by(weekday)%>%
+  summarise(nWeekend = n())
+totalweekend<- sum(weekend$nWeekend)
+mediaPyweekend<- 100*(totalweekend/totalPy)
+
+w <- weekend%>%ggplot(aes(weekday,nWeekend, fill= weekday) )+
+          geom_col()+
+          geom_hline(yintercept = 28.83)+
+          ggtitle( "Media de uso no fim de semana= ",mediaPyweekend )
+
+w
+```
+
+##Ruby popularidade na semana:
+
+```{r}
+ruby = git  %>% filter(file_extension%in% c("rb"))
+
+ruby$date<-paste(ruby$month_day, ruby$the_month, ruby$the_year, sep = "-")
+ruby$weekday<-wday(as.Date(ruby$date), label = TRUE)
+
+totalRb <- ruby%>%summarise(nRb = n())
+
+week <- ruby%>% 
+  filter(weekday%in% c("Mon", "Tue","Wed", "Thu", "Fri"))%>% group_by(weekday)%>%
+  summarise(nWeek = n())
+totalweek<- sum(week$nWeek)
+mediaRbWeek<- 100*(totalweek/totalRb)
+
+p <- week%>%ggplot(aes(weekday,nWeek, fill= weekday) )+
+          geom_col()+
+          geom_hline(yintercept = 71.93)+
+          ggtitle( "Media de uso na semana= ",mediaRbWeek )
+
+p
+
+```
+
+##Ruby popularidade no fim de semana 
+```{r}
+weekend <- ruby%>% 
+  filter(weekday%in% c("Sun", "Sat"))%>% group_by(weekday)%>%
+  summarise(nWeekend = n())
+totalweekend<- sum(weekend$nWeekend)
+mediaRbweekend<- 100*(totalweekend/totalPy)
+
+w <- weekend%>%ggplot(aes(weekday,nWeekend, fill= weekday) )+
+          geom_col()+
+          geom_hline(yintercept = 27.22)+
+          ggtitle( "Media de uso no fim de semana= ",mediaRbweekend )
+
+w
+```
+Podemos ver pelos valores da tabela que ambas são mais populares nos fins de semana 
+
+#Pergunta 2: Existe uma diferença significativa entre a popularidade das duas linguagens nos fins de semana?
+```{r}
+l = git  %>% filter(file_extension%in% c("rb", "py"))
+
+l$date<-paste(l$month_day, l$the_month, l$the_year, sep = "-")
+l$weekday<-wday(as.Date(l$date), label = TRUE)
+
+total <- l%>%summarise(n = n())
+f <- l%>% 
+  filter(weekday%in% c("Sun", "Sat"))%>% group_by(file_extension)%>%summarise(total = n())
+
+
+a <- f%>%ggplot(aes(file_extension,total, fill= file_extension) )+
+          geom_col()+
+          ggtitle( "Uso no fim de semana" )
+
+ggplotly(a)
+
 ```
