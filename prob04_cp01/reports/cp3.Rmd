@@ -10,7 +10,6 @@ library(here)
 library(ggplot2)
 library(plotly)
 library(lubridate)
-library(bootstrap)
 library(boot)
 theme_set(theme_bw())
 
@@ -28,7 +27,7 @@ git = read_csv(("../data/git.csv"),
                                      month_day = col_character(), 
                                      the_month = col_character(),
                                      the_year = col_character(),
-                                     users = col_character()))
+                                     users = col_double()))
 
 
 ```
@@ -38,7 +37,7 @@ Antes de qualquer coisa, iremos formatar as datas para ter noção de qual dia, 
 ```{r}
 git$date<-paste(git$month_day, git$the_month, git$the_year, sep = "-")
 git$weekday<-wday(as.Date(git$date), label = TRUE)
-git$is_weekend = isWeekend(git$date)
+#git$is_weekend = isWeekend(git$date)
 
 glimpse(git)
 colnames(git)
@@ -62,10 +61,26 @@ p
 
 
 ```{r}
-#median.month = py %>% bootstrap(median(~users), 
-#            R = 2000) %>% 
-#    CI.percentile(probs = c(.025, .975))
-#median.month
+
+str(py)
+
+py = ungroup(py)
+
+median.month =  boot(1:1000,
+                     median, 
+                     R = 200) 
+
+# install.packages("resample")
+library(resample)
+
+b = bootstrap(py, median(users))
+ci = CI.percentile(b, probs = c(.025, .975))
+ics = ci %>% 
+  as.tibble()
+# %>% 
+#   CI.percentile(probs = c(.025, .975))
+# 
+# median.month
 
 
 ```
