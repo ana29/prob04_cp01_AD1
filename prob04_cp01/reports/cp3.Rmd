@@ -1,0 +1,79 @@
+---
+title: "Cp3"
+author: "Ana Godoy"
+date: "7/15/2018"
+output: html_document
+---
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(here)
+library(ggplot2)
+library(plotly)
+library(lubridate)
+library(bootstrap)
+library(boot)
+theme_set(theme_bw())
+
+```
+#Os Dados
+Os dados brutos contém a contagem de quantas pessoas editaram arquivos no github de  (dia, mês e ano) 2016 a 2017 e as devidas extensões desses arquivos.
+Para a nossa análise escolhemos:
+  -Python:  É uma linguagem de programação de alto nível, interpretada, de script, imperativa, orientada a objetos, funcional, de tipagem dinâmica e forte. Foi lançada por Guido van Rossum em 1991.(https://pt.wikipedia.org/wiki/Python)
+  -Ruby: É uma linguagem de programação interpretada multiparadigma, de tipagem dinâmica e forte, com gerenciamento de memória automático, originalmente planejada e desenvolvida no Japão em 1995.(https://pt.wikipedia.org/wiki/Ruby_(linguagem_de_programação))  
+```{r}
+git = read_csv(("../data/git.csv"), 
+                    progress = FALSE,
+                    col_types = cols(.default = col_double(), 
+                                     file_extension = col_character(), 
+                                     month_day = col_character(), 
+                                     the_month = col_character(),
+                                     the_year = col_character(),
+                                     users = col_character()))
+
+
+```
+
+Antes de qualquer coisa, iremos formatar as datas para ter noção de qual dia, mês e ano as linguagens foram usadas.
+
+```{r}
+git$date<-paste(git$month_day, git$the_month, git$the_year, sep = "-")
+git$weekday<-wday(as.Date(git$date), label = TRUE)
+git$is_weekend = isWeekend(git$date)
+
+glimpse(git)
+colnames(git)
+```
+
+Como temos somente uma amostra das atividades  dos usuários no  github, utilizaremos o bootstrap que é um método de reamostragem para aproximar nossa amostra da realidade e construir nossos intervalos de confiança.
+
+#Para ambas as libguagens o mês de Dezembro possui menor popularidade ?
+
+```{r}
+
+py <- git%>%group_by(the_month, users)%>%summarise(nPy = n())
+
+p <- py%>%ggplot(aes(the_month,nPy, fill= the_month) )+
+          geom_col()+
+          ggtitle( "Quantidade do uso de Python em um ano ")
+
+p
+
+```
+
+
+```{r}
+#median.month = py %>% bootstrap(median(~users), 
+#            R = 2000) %>% 
+#    CI.percentile(probs = c(.025, .975))
+#median.month
+
+
+```
+
+
+#Qual a linguagem mais popular em 2016?
+
+
+
+
+
