@@ -11,6 +11,8 @@ library(ggplot2)
 library(plotly)
 library(lubridate)
 library(boot)
+library(resample)
+
 theme_set(theme_bw())
 
 ```
@@ -43,52 +45,110 @@ glimpse(git)
 colnames(git)
 ```
 
-Como temos somente uma amostra das atividades  dos usuários no  github, utilizaremos o bootstrap que é um método de reamostragem para aproximar nossa amostra da realidade e construir nossos intervalos de confiança.
 
 #Para ambas as libguagens o mês de Dezembro possui menor popularidade ?
 
 ```{r}
 
-py <- git%>%group_by(the_month, users)%>%summarise(nPy = n())
+pyrb <- git%>% filter(file_extension%in% c("py", "rb"), the_month=="12")%>%
+  group_by(the_month, users, file_extension)%>%
+  summarise(nPy=sum(file_extension=="py"),
+            nRb =  sum (file_extension=="rb"))
 
-p <- py%>%ggplot(aes(the_month,nPy, fill= the_month) )+
-          geom_col()+
-          ggtitle( "Quantidade do uso de Python em um ano ")
+p <- pyrb%>%ggplot(aes(file_extension, fill= file_extension) )+
+          geom_bar()+
+          ggtitle( "Quantidade do uso de Python e Ruby no mês de dezembro ")
+
+p
+
+
+```
+
+Aqui podemos visualizar que Python foi mais popular em dezembro. Como temos somente uma amostra das atividades  dos usuários no  github, utilizaremos o bootstrap que é um método de reamostragem para aproximar nossa amostra da realidade e construir nossos intervalos com 95% de confiança .
+
+```{r}
+#ic py
+py <- git%>%filter(file_extension%in% c("py", the_month=="12"))%>%group_by(users)%>%summarise(nPy = n())
+
+b = bootstrap(py, median(users))
+ci = CI.percentile(b, probs = c(.025, .975))
+median.py = ci %>% as.tibble()
+
+#ic rb
+rb <- git%>%filter(file_extension%in% c("rb", the_month=="12"))%>%group_by(users)%>%summarise(nRb = n())
+
+cRb = bootstrap(rb, median(users))
+ciRb = CI.percentile(cRb, probs = c(.025, .975))
+median.rb = ciRb %>% as.tibble()
+
+#grafico
+
+                    
+df = data.frame(rbind(median.py, 
+                      # median.py,
+                      median.rb
+                      # median.rb
+                      ))
+
+df$medida = row.names(df)
+
+df %>% 
+  ggplot(aes(x = medida, ymin = X2.5., ymax = X97.5.)) + 
+  geom_errorbar(width = .2)
+df
+
+```
+Podemos afirmar com 95% de confiança que 1 (Python) foi mais popular que 2 (Ruby) no mês de dezembro. Confirmando assim as expectativas iniciais.
+
+#Qual das linguagem foi mais popular entre 2016 e 2017?
+
+Para visualizar essa diferença, vejamos mês a mês o comportamento de uso  das linguagens no github.
+```{r}
+
+pyrb <- git%>% filter(file_extension%in% c("py", "rb"))%>%
+  group_by(the_month, users, file_extension)
+
+p <- pyrb%>%ggplot(aes(the_month, fill= file_extension) )+
+          geom_bar()+
+          ggtitle( "Quantidade do uso de Python e Ruby entre 2016 e 2017 ")
 
 p
 
 ```
-
+Utilizaremos, mais uma vez, o bootstrap para aproximar nossa amostra da realidade e construir nossos intervalos com 95% de confiança .
 
 ```{r}
-
-str(py)
-
-py = ungroup(py)
-
-median.month =  boot(1:1000,
-                     median, 
-                     R = 200) 
-
-# install.packages("resample")
-library(resample)
+#ic py
+py <- git%>%filter(file_extension%in% c("py"))%>%group_by(users)%>%summarise(nPy = n())
 
 b = bootstrap(py, median(users))
 ci = CI.percentile(b, probs = c(.025, .975))
-ics = ci %>% 
-  as.tibble()
-# %>% 
-#   CI.percentile(probs = c(.025, .975))
-# 
-# median.month
+median.py = ci %>% as.tibble()
 
+#ic rb
+rb <- git%>%filter(file_extension%in% c("rb"))%>%group_by(users)%>%summarise(nRb = n())
+
+cRb = bootstrap(rb, median(users))
+ciRb = CI.percentile(cRb, probs = c(.025, .975))
+median.rb = ciRb %>% as.tibble()
+
+#grafico
+
+                    
+df = data.frame(rbind(median.py, 
+                      # median.py,
+                      median.rb
+                      # median.rb
+                      ))
+
+df$medida = row.names(df)
+
+df %>% 
+  ggplot(aes(x = medida, ymin = X2.5., ymax = X97.5.)) + 
+  geom_errorbar(width = .2)
+df
 
 ```
-
-
-#Qual a linguagem mais popular em 2016?
-
-
-
+Podemos dizer com 95% de confiança que a popularidade de Python (1) durante o ano tem uma diferença significativa da de Ruby (2) durante o mesmo período.
 
 
