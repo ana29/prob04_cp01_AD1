@@ -39,7 +39,6 @@ Antes de qualquer coisa, iremos formatar as datas para ter noção de qual dia, 
 ```{r}
 git$date<-paste(git$month_day, git$the_month, git$the_year, sep = "-")
 git$weekday<-wday(as.Date(git$date), label = TRUE)
-#git$is_weekend = isWeekend(git$date)
 
 glimpse(git)
 colnames(git)
@@ -68,12 +67,8 @@ Aqui podemos visualizar que Python foi mais popular em dezembro. Como temos some
 
 ```{r}
 #ic py
-py <-
-  git %>% 
-  filter(file_extension == "py", the_month == "12") %>% 
-  group_by(users) %>%
-  summarise(nPy = n())
-  
+py <- git%>%filter(file_extension%in% c("py", the_month=="12"))%>%group_by(users)%>%summarise(nPy = n())
+
 b = bootstrap(py, median(users))
 ci = CI.percentile(b, probs = c(.025, .975))
 median.py = ci %>% as.tibble()
@@ -123,16 +118,16 @@ Utilizaremos, mais uma vez, o bootstrap para aproximar nossa amostra da realidad
 
 ```{r}
 #ic py
-py2 <- git%>%filter(file_extension%in% c("py"))%>%group_by(users)%>%summarise(nPy = n())
+py <- git%>%filter(file_extension%in% c("py"))%>%group_by(users)%>%summarise(nPy = n())
 
-b = bootstrap(py2, median(users))
+b = bootstrap(py, median(users))
 ci = CI.percentile(b, probs = c(.025, .975))
 median.py = ci %>% as.tibble()
 
 #ic rb
-rb2 <- git%>%filter(file_extension%in% c("rb"))%>%group_by(users)%>%summarise(nRb = n())
+rb <- git%>%filter(file_extension%in% c("rb"))%>%group_by(users)%>%summarise(nRb = n())
 
-cRb = bootstrap(rb2, median(users))
+cRb = bootstrap(rb, median(users))
 ciRb = CI.percentile(cRb, probs = c(.025, .975))
 median.rb = ciRb %>% as.tibble()
 
@@ -154,77 +149,5 @@ df
 
 ```
 Podemos dizer com 95% de confiança que a popularidade de Python (1) durante o ano tem uma diferença significativa da de Ruby (2) durante o mesmo período.
-#Python vs Java
-Até aqui compramos duas linguagens com um paradigma parecido (Python e Ruby), mAs será que comparando uma delas com outra linguagem de paradigma diferente o comportamento é parecido ? Para isso vamos comparar Python e Java.
- -Java: é uma linguagem de programação orientada a objetos desenvolvida na década de 90 por uma equipe de programadores chefiada por James Gosling, na empresa Sun Microsystems. Diferente das linguagens de programação convencionais, que são compiladas para código nativo, a linguagem Java é compilada para um bytecode que é interpretado por uma máquina virtual (Java Virtual Machine, mais conhecida pela sua abreviação JVM). (https://pt.wikipedia.org/wiki/Java_(linguagem_de_programação))
- 
-#Para ambas as libguagens o mês de Dezembro possui menor popularidade ?
-```{r}
-#ic py
-py <-
-  git %>% 
-  filter(file_extension == "py", the_month == "12") %>% 
-  group_by(users) %>%
-  summarise(nPy = n())
-  
-b = bootstrap(py, median(users))
-ci = CI.percentile(b, probs = c(.025, .975))
-median.py = ci %>% as.tibble()
 
-#ic java
-java <- git%>%filter(file_extension%in% c("java", the_month=="12"))%>%group_by(users)%>%summarise(nRb = n())
 
-cRb = bootstrap(java, median(users))
-ciRb = CI.percentile(cRb, probs = c(.025, .975))
-median.java = ciRb %>% as.tibble()
-
-#grafico
-
-                    
-df = data.frame(rbind(median.py, 
-                      # median.py,
-                      median.java
-                      # median.rb
-                      ))
-
-df$medida = row.names(df)
-
-df %>% 
-  ggplot(aes(x = medida, ymin = X2.5., ymax = X97.5.)) + 
-  geom_errorbar(width = .2)
-df
-
-```
-
-#Qual das linguagem foi mais popular entre 2016 e 2017?
-```{r}
-#ic py
-py2 <- git%>%filter(file_extension%in% c("py"))%>%group_by(users)
-b = bootstrap(py2, median(users))
-ci = CI.percentile(b, probs = c(.025, .975))
-median.py = ci %>% as.tibble()
-
-#ic rb
-java2 <- git%>%filter(file_extension%in% c("java"))%>%group_by(users)
-cRb = bootstrap(java2, median(users))
-ciRb = CI.percentile(cRb, probs = c(.025, .975))
-median.rb = ciRb %>% as.tibble()
-
-#grafico
-
-                    
-df = data.frame(rbind(median.py, 
-                      # median.py,
-                      median.rb
-                      # median.rb
-                      ))
-
-df$medida = row.names(df)
-
-df %>% 
-  ggplot(aes(x = medida, ymin = X2.5., ymax = X97.5.)) + 
-  geom_errorbar(width = .2)
-df
-
-```
-Aqui novamente ao longo de um ano Python (1) se mostrou mais popular que Java (2)
