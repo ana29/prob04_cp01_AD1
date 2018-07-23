@@ -68,8 +68,12 @@ Aqui podemos visualizar que Python foi mais popular em dezembro. Como temos some
 
 ```{r}
 #ic py
-py <- git%>%filter(file_extension%in% c("py", the_month=="12"))%>%group_by(users)%>%summarise(nPy = n())
-
+py <-
+  git %>% 
+  filter(file_extension == "py", the_month == "12") %>% 
+  group_by(users) %>%
+  summarise(nPy = n())
+  
 b = bootstrap(py, median(users))
 ci = CI.percentile(b, probs = c(.025, .975))
 median.py = ci %>% as.tibble()
@@ -119,16 +123,16 @@ Utilizaremos, mais uma vez, o bootstrap para aproximar nossa amostra da realidad
 
 ```{r}
 #ic py
-py <- git%>%filter(file_extension%in% c("py"))%>%group_by(users)%>%summarise(nPy = n())
+py2 <- git%>%filter(file_extension%in% c("py"))%>%group_by(users)%>%summarise(nPy = n())
 
-b = bootstrap(py, median(users))
+b = bootstrap(py2, median(users))
 ci = CI.percentile(b, probs = c(.025, .975))
 median.py = ci %>% as.tibble()
 
 #ic rb
-rb <- git%>%filter(file_extension%in% c("rb"))%>%group_by(users)%>%summarise(nRb = n())
+rb2 <- git%>%filter(file_extension%in% c("rb"))%>%group_by(users)%>%summarise(nRb = n())
 
-cRb = bootstrap(rb, median(users))
+cRb = bootstrap(rb2, median(users))
 ciRb = CI.percentile(cRb, probs = c(.025, .975))
 median.rb = ciRb %>% as.tibble()
 
