@@ -103,6 +103,8 @@ tibble(diferenca = permutacoes) %>%
 ```
 
 #P-valor 
+
+(http://www.portalaction.com.br/inferencia/512-calculo-e-interpretacao-do-p-valor);
 ```{r}
 
 prop = function(x){
