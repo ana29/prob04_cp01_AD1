@@ -59,16 +59,16 @@ data
 #Proporção da amostra 
 ```{r}
 
-data <- merge(data, data %>% select(the_month, file_extension, users, date) %>% group_by(date) %>% summarise(cont_ratings = n()),  by='date')
+data <- data %>% select(the_month, file_extension, users) 
 
-data %>%
+data %>% group_by(file_extension)%>% summarise(popularidade = sum(users)) %>% 
     ggplot() + 
-    aes(x = reorder(file_extension, cont_ratings, NROW),
+    aes(x = reorder(file_extension, popularidade),y=popularidade,
         fill = file_extension) + 
-    geom_bar() + 
+    geom_col() + 
     labs(
         x = "File Extension", 
-        y = "Quantidade de avaliações"
+        y = "Popularidade"
     )
 ```
 #Usando Testes de hipótese e p-valores
@@ -77,7 +77,7 @@ data %>%
 # A diferença na amostra, que queremos comparar com o modelo nulo
 d = data %>% 
     group_by(file_extension) %>% 
-    summarise(ct = sum(cont_ratings) / n())
+    summarise(ct = sum(users))
 m1 = d %>% filter(file_extension=="py") %>% pull(ct)
 m2 = d %>% filter(file_extension=="rb") %>% pull(ct)
 
@@ -87,11 +87,12 @@ diferenca_amostral = m1 - m2
 permutacoes = replicate(10000, 
           {
               d = data %>% 
-                  mutate(version_shuffled = sample(file_extension=="py", n())) %>% 
+                  mutate(version_shuffled = sample(file_extension ,n())) %>% 
                   group_by(version_shuffled) %>% 
-                  summarise(ct = sum(cont_ratings) / n())
-              m1 = d %>% filter(!version_shuffled) %>% pull(ct)
-              m2 = d %>% filter(version_shuffled) %>% pull(ct)
+                  summarise(ct = sum(users))
+              m1 = d %>% filter(version_shuffled=="py") %>% pull(ct)
+              m2 = d %>% filter(version_shuffled=="rb") %>% pull(ct)
+
               m1 - m2
           })
 
@@ -103,15 +104,17 @@ tibble(diferenca = permutacoes) %>%
 ```
 
 #P-valor 
-
+O p-valor, também denominado nível descritivo do teste, é a probabilidade de que a estatística do teste (como variável aleatória) tenha valor extremo em relação ao valor observado (estatística) quando a hipótese H_0 é verdadeira.
 (http://www.portalaction.com.br/inferencia/512-calculo-e-interpretacao-do-p-valor);
+Se p-valor > 5% - Não rejeita H0
+Se p-valor < 5% - Rejeita H0
 ```{r}
 
 prop = function(x){
     sum(x)/NROW(x)
 }
 data %>% 
-    resample::permutationTest2(statistic = prop(cont_ratings), 
+    resample::permutationTest2(statistic = prop(users), 
                      treatment = file_extension)
 
 ```
