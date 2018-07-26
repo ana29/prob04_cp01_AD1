@@ -47,107 +47,69 @@ colnames(git)
 
 #Para ambas as libguagens o mês de Dezembro possui menor popularidade ?
 
-```{r}
 
-pyrb <- git%>% filter(file_extension%in% c("py", "rb"), the_month=="12")%>%
-  group_by(the_month, users, file_extension)%>%
-  summarise(nPy=sum(file_extension=="py"),
-            nRb =  sum (file_extension=="rb"))
-
-p <- pyrb%>%ggplot(aes(file_extension, fill= file_extension) )+
-          geom_bar()+
-          ggtitle( "Quantidade do uso de Python e Ruby no mês de dezembro ")
-
-p
-
-
-```
-
-Aqui podemos visualizar que Python foi mais popular em dezembro. Como temos somente uma amostra das atividades  dos usuários no  github, utilizaremos o bootstrap que é um método de reamostragem para aproximar nossa amostra da realidade e construir nossos intervalos com 95% de confiança .
 
 ```{r}
 #ic py
-py <- git%>%filter(file_extension%in% c("py", the_month=="12"))%>%group_by(users)%>%summarise(nPy = n())
+data <- git%>%filter(file_extension %in% c("py", "rb"), the_month=="12")%>%group_by(users, the_month, file_extension,date)
+data
 
-b = bootstrap(py, median(users))
-ci = CI.percentile(b, probs = c(.025, .975))
-median.py = ci %>% as.tibble()
-
-#ic rb
-rb <- git%>%filter(file_extension%in% c("rb", the_month=="12"))%>%group_by(users)%>%summarise(nRb = n())
-
-cRb = bootstrap(rb, median(users))
-ciRb = CI.percentile(cRb, probs = c(.025, .975))
-median.rb = ciRb %>% as.tibble()
-
-#grafico
-
-                    
-df = data.frame(rbind(median.py, 
-                      # median.py,
-                      median.rb
-                      # median.rb
-                      ))
-
-df$medida = row.names(df)
-
-df %>% 
-  ggplot(aes(x = medida, ymin = X2.5., ymax = X97.5.)) + 
-  geom_errorbar(width = .2)
-df
 
 ```
-Podemos afirmar com 95% de confiança que 1 (Python) foi mais popular que 2 (Ruby) no mês de dezembro. Confirmando assim as expectativas iniciais.
-
-#Qual das linguagem foi mais popular entre 2016 e 2017?
-
-Para visualizar essa diferença, vejamos mês a mês o comportamento de uso  das linguagens no github.
+#Proporção da amostra 
 ```{r}
 
-pyrb <- git%>% filter(file_extension%in% c("py", "rb"))%>%
-  group_by(the_month, users, file_extension)
+data <- merge(data, data %>% select(the_month, file_extension, users, date) %>% group_by(date) %>% summarise(cont_ratings = n()),  by='date')
 
-p <- pyrb%>%ggplot(aes(the_month, fill= file_extension) )+
-          geom_bar()+
-          ggtitle( "Quantidade do uso de Python e Ruby entre 2016 e 2017 ")
-
-p
-
+data %>%
+    ggplot() + 
+    aes(x = reorder(file_extension, cont_ratings, NROW),
+        fill = file_extension) + 
+    geom_bar() + 
+    labs(
+        x = "File Extension", 
+        y = "Quantidade de avaliações"
+    )
 ```
-Utilizaremos, mais uma vez, o bootstrap para aproximar nossa amostra da realidade e construir nossos intervalos com 95% de confiança .
+#Usando Testes de hipótese e p-valores
 
 ```{r}
-#ic py
-py <- git%>%filter(file_extension%in% c("py"))%>%group_by(users)%>%summarise(nPy = n())
+# A diferença na amostra, que queremos comparar com o modelo nulo
+d = data %>% 
+    group_by(file_extension) %>% 
+    summarise(ct = sum(cont_ratings) / n())
+m1 = d %>% filter(file_extension=="py") %>% pull(ct)
+m2 = d %>% filter(file_extension=="rb") %>% pull(ct)
 
-b = bootstrap(py, median(users))
-ci = CI.percentile(b, probs = c(.025, .975))
-median.py = ci %>% as.tibble()
+diferenca_amostral = m1 - m2
 
-#ic rb
-rb <- git%>%filter(file_extension%in% c("rb"))%>%group_by(users)%>%summarise(nRb = n())
+# Permutações para calcular o que acontece no modelo nulo
+permutacoes = replicate(10000, 
+          {
+              d = data %>% 
+                  mutate(version_shuffled = sample(file_extension=="py", n())) %>% 
+                  group_by(version_shuffled) %>% 
+                  summarise(ct = sum(cont_ratings) / n())
+              m1 = d %>% filter(!version_shuffled) %>% pull(ct)
+              m2 = d %>% filter(version_shuffled) %>% pull(ct)
+              m1 - m2
+          })
 
-cRb = bootstrap(rb, median(users))
-ciRb = CI.percentile(cRb, probs = c(.025, .975))
-median.rb = ciRb %>% as.tibble()
-
-#grafico
-
-                    
-df = data.frame(rbind(median.py, 
-                      # median.py,
-                      median.rb
-                      # median.rb
-                      ))
-
-df$medida = row.names(df)
-
-df %>% 
-  ggplot(aes(x = medida, ymin = X2.5., ymax = X97.5.)) + 
-  geom_errorbar(width = .2)
-df
+tibble(diferenca = permutacoes) %>% 
+  ggplot(aes(x = diferenca)) + 
+  geom_histogram(bins = 30) + 
+  geom_vline(xintercept = diferenca_amostral, size = 2, color = "orange")
 
 ```
-Podemos dizer com 95% de confiança que a popularidade de Python (1) durante o ano tem uma diferença significativa da de Ruby (2) durante o mesmo período.
 
+#P-valor 
+```{r}
 
+prop = function(x){
+    sum(x)/NROW(x)
+}
+data %>% 
+    resample::permutationTest2(statistic = prop(cont_ratings), 
+                     treatment = file_extension)
+
+```
